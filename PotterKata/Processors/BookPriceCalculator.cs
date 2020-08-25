@@ -1,43 +1,61 @@
 ﻿namespace PotterKata.Processors
 {
     using System.Collections.Generic;
-    using System.Data;
     using System.Linq;
 
     using PotterKata.Models;
 
     public class BookPriceCalculator
     {
-        public decimal CalculateDiscountedPrice(List<Book> books)
+        public decimal CalculateDiscountedPrice(List<BookOrder> bookOrders)
         {
-            var uniqueBooks = books.GroupBy(x => x.Title).Select(x => x.First());
+            var uniqueBooks = bookOrders.GroupBy(x => x.Title).Select(x => x.First()).ToArray();
 
-            var uniqueBookPrice = uniqueBooks.Sum(x => x.Price);
+            var totalPrice = (decimal)0;
 
-            var totalNonDiscountedPrice = books.Sum(x => x.Price);
+            while (bookOrders.Count > 0)
+            {
+                totalPrice += CalculatePriceForSelectedBooks(uniqueBooks);
+                foreach (var bookOrder in uniqueBooks)
+                {
+                    bookOrders.Remove(bookOrder);
+                }
+
+                uniqueBooks = bookOrders.GroupBy(x => x.Title).Select(x => x.First()).ToArray();
+            }
+
+            return totalPrice;
+        }
+
+        private static decimal CalculatePriceForSelectedBooks(BookOrder[] bookOrders)
+        {
+            var totalNonDiscountedPrice = bookOrders.Sum(x => x.Price);
 
             decimal discount;
 
-            switch (uniqueBooks.Count())
+            switch (bookOrders.Count())
             {
+                case 1:
+                    return bookOrders.Sum(x => x.Price);
                 case 2:
-                    discount = uniqueBookPrice * (decimal).05;
+                    discount = totalNonDiscountedPrice * (decimal).05;
                     break;
 
                 case 3:
-                    discount = uniqueBookPrice * (decimal).1;
+                    discount = totalNonDiscountedPrice * (decimal).1;
                     break;
 
                 case 4:
-                    discount = uniqueBookPrice * (decimal).2;
+                    discount = totalNonDiscountedPrice * (decimal).2;
                     break;
 
                 case 5:
-                    discount = uniqueBookPrice * (decimal).25;
+                    discount = totalNonDiscountedPrice * (decimal).25;
                     break;
 
                 default:
-                    return books.Sum(x => x.Price);
+                    discount = totalNonDiscountedPrice * (decimal).25;
+                    break;
             }
 
             return totalNonDiscountedPrice - discount;
